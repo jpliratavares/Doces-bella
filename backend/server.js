@@ -1,7 +1,7 @@
 import express from 'express'
 import cors from 'cors'
 import bodyParser from 'body-parser'
-import Database from 'better-sqlite3'
+import sqlite3 from 'sqlite3'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
@@ -17,66 +17,108 @@ app.use(bodyParser.json())
 
 // Initialize SQLite Database
 const dbPath = path.join(__dirname, 'doces_bella.db')
-const db = new Database(dbPath)
+const db = new sqlite3.Database(dbPath, (err) => {
+  if (err) {
+    console.error('Database error:', err)
+  } else {
+    console.log('✅ Connected to SQLite database')
+    initDB()
+  }
+})
 
 // Enable foreign keys
-db.pragma('foreign_keys = ON')
+db.run('PRAGMA foreign_keys = ON')
 
 // Initialize tables
 function initDB() {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS sweets (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      form_name TEXT,
-      category TEXT,
-      cost_price REAL,
-      selling_price REAL,
-      quantity INTEGER DEFAULT 0,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
+  db.serialize(() => {
+    db.run(`
+      CREATE TABLE IF NOT EXISTS sweets (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        form_name TEXT,
+        category TEXT,
+        cost_price REAL,
+        selling_price REAL,
+        quantity INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `)
 
-    CREATE TABLE IF NOT EXISTS sales (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      sweet_id INTEGER NOT NULL,
-      quantity INTEGER,
-      customer_name TEXT,
-      discount REAL DEFAULT 0,
-      surcharge REAL DEFAULT 0,
-      payment_method TEXT,
-      status TEXT,
-      notes TEXT,
-      date TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (sweet_id) REFERENCES sweets(id) ON DELETE CASCADE
-    );
+    db.run(`
+      CREATE TABLE IF NOT EXISTS sales (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        sweet_id INTEGER NOT NULL,
+        quantity INTEGER,
+        customer_name TEXT,
+        discount REAL DEFAULT 0,
+        surcharge REAL DEFAULT 0,
+        payment_method TEXT,
+        status TEXT,
+        notes TEXT,
+        date TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (sweet_id) REFERENCES sweets(id) ON DELETE CASCADE
+      )
+    `)
 
-    CREATE TABLE IF NOT EXISTS expenses (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      description TEXT NOT NULL,
-      amount REAL,
-      category TEXT,
-      type TEXT,
-      date TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-  `)
-  console.log('✅ Database initialized')
+    db.run(`
+      CREATE TABLE IF NOT EXISTS expenses (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        description TEXT NOT NULL,
+        amount REAL,
+        category TEXT,
+        type TEXT,
+        date TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `, () => {
+      console.log('✅ Database initialized')
+    })
+  })
+}
+
+// Helper function to run queries with promises
+function dbRun(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.run(sql, params, function(err) {
+      if (err) reject(err)
+      else resolve(this)
+    })
+  })
+}
+
+function dbGet(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.get(sql, params, (err, row) => {
+      if (err) reject(err)
+      else resolve(row)
+    })
+  })
+}
+
+function dbAll(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.all(sql, params, (err, rows) => {
+      if (err) reject(err)
+      else resolve(rows || [])
+    })
+  })
 }
 
 // Sweets endpoints
-app.get('/api/sweets', (req, res) => {
+app.get('/api/sweets', async (req, res) => {
   try {
-    const sweets = db.prepare('SELECT * FROM sweets ORDER BY created_at DESC').all()
+    const sweets = await dbAll('SELECT * FROM sweets ORDER BY created_at DESC')
     res.json(sweets)
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
 })
 
-app.get('/api/sweets/:id', (req, res) => {
+app.get('/api/sweets/:id', async (req, res) => {
   try {
-    const sweet = db.prepare('SELECT * FROM sweets WHERE id = ?').get(req.params.id)
+    const sweet = await dbGet('SELECT * FROM sweets WHERE id = ?', [req.params.id])
     if (!sweet) return res.status(404).json({ error: 'Not found' })
     res.json(sweet)
   } catch (error) {
@@ -84,38 +126,39 @@ app.get('/api/sweets/:id', (req, res) => {
   }
 })
 
-app.post('/api/sweets', (req, res) => {
+app.post('/api/sweets', async (req, res) => {
   try {
     const { name, form_name, category, cost_price, selling_price, quantity } = req.body
-    const stmt = db.prepare(`
-      INSERT INTO sweets (name, form_name, category, cost_price, selling_price, quantity)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `)
-    const result = stmt.run(name, form_name, category, cost_price, selling_price, quantity || 0)
-    const sweet = db.prepare('SELECT * FROM sweets WHERE id = ?').get(result.lastInsertRowid)
+    const result = await dbRun(
+      `INSERT INTO sweets (name, form_name, category, cost_price, selling_price, quantity)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [name, form_name, category, cost_price, selling_price, quantity || 0]
+    )
+    const sweet = await dbGet('SELECT * FROM sweets WHERE id = ?', [result.lastID])
     res.status(201).json(sweet)
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
 })
 
-app.put('/api/sweets/:id', (req, res) => {
+app.put('/api/sweets/:id', async (req, res) => {
   try {
     const { name, form_name, category, cost_price, selling_price, quantity } = req.body
-    db.prepare(`
-      UPDATE sweets SET name=?, form_name=?, category=?, cost_price=?, selling_price=?, quantity=?
-      WHERE id=?
-    `).run(name, form_name, category, cost_price, selling_price, quantity, req.params.id)
-    const sweet = db.prepare('SELECT * FROM sweets WHERE id = ?').get(req.params.id)
+    await dbRun(
+      `UPDATE sweets SET name=?, form_name=?, category=?, cost_price=?, selling_price=?, quantity=?
+       WHERE id=?`,
+      [name, form_name, category, cost_price, selling_price, quantity, req.params.id]
+    )
+    const sweet = await dbGet('SELECT * FROM sweets WHERE id = ?', [req.params.id])
     res.json(sweet)
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
 })
 
-app.delete('/api/sweets/:id', (req, res) => {
+app.delete('/api/sweets/:id', async (req, res) => {
   try {
-    db.prepare('DELETE FROM sweets WHERE id = ?').run(req.params.id)
+    await dbRun('DELETE FROM sweets WHERE id = ?', [req.params.id])
     res.json({ success: true })
   } catch (error) {
     res.status(500).json({ error: error.message })
@@ -123,18 +166,18 @@ app.delete('/api/sweets/:id', (req, res) => {
 })
 
 // Sales endpoints
-app.get('/api/sales', (req, res) => {
+app.get('/api/sales', async (req, res) => {
   try {
-    const sales = db.prepare('SELECT * FROM sales ORDER BY created_at DESC').all()
+    const sales = await dbAll('SELECT * FROM sales ORDER BY created_at DESC')
     res.json(sales)
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
 })
 
-app.get('/api/sales/:id', (req, res) => {
+app.get('/api/sales/:id', async (req, res) => {
   try {
-    const sale = db.prepare('SELECT * FROM sales WHERE id = ?').get(req.params.id)
+    const sale = await dbGet('SELECT * FROM sales WHERE id = ?', [req.params.id])
     if (!sale) return res.status(404).json({ error: 'Not found' })
     res.json(sale)
   } catch (error) {
@@ -142,38 +185,39 @@ app.get('/api/sales/:id', (req, res) => {
   }
 })
 
-app.post('/api/sales', (req, res) => {
+app.post('/api/sales', async (req, res) => {
   try {
     const { sweet_id, quantity, customer_name, discount, surcharge, payment_method, status, notes, date } = req.body
-    const stmt = db.prepare(`
-      INSERT INTO sales (sweet_id, quantity, customer_name, discount, surcharge, payment_method, status, notes, date)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `)
-    const result = stmt.run(sweet_id, quantity, customer_name, discount || 0, surcharge || 0, payment_method, status, notes, date)
-    const sale = db.prepare('SELECT * FROM sales WHERE id = ?').get(result.lastInsertRowid)
+    const result = await dbRun(
+      `INSERT INTO sales (sweet_id, quantity, customer_name, discount, surcharge, payment_method, status, notes, date)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [sweet_id, quantity, customer_name, discount || 0, surcharge || 0, payment_method, status, notes, date]
+    )
+    const sale = await dbGet('SELECT * FROM sales WHERE id = ?', [result.lastID])
     res.status(201).json(sale)
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
 })
 
-app.put('/api/sales/:id', (req, res) => {
+app.put('/api/sales/:id', async (req, res) => {
   try {
     const { sweet_id, quantity, customer_name, discount, surcharge, payment_method, status, notes, date } = req.body
-    db.prepare(`
-      UPDATE sales SET sweet_id=?, quantity=?, customer_name=?, discount=?, surcharge=?, payment_method=?, status=?, notes=?, date=?
-      WHERE id=?
-    `).run(sweet_id, quantity, customer_name, discount, surcharge, payment_method, status, notes, date, req.params.id)
-    const sale = db.prepare('SELECT * FROM sales WHERE id = ?').get(req.params.id)
+    await dbRun(
+      `UPDATE sales SET sweet_id=?, quantity=?, customer_name=?, discount=?, surcharge=?, payment_method=?, status=?, notes=?, date=?
+       WHERE id=?`,
+      [sweet_id, quantity, customer_name, discount, surcharge, payment_method, status, notes, date, req.params.id]
+    )
+    const sale = await dbGet('SELECT * FROM sales WHERE id = ?', [req.params.id])
     res.json(sale)
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
 })
 
-app.delete('/api/sales/:id', (req, res) => {
+app.delete('/api/sales/:id', async (req, res) => {
   try {
-    db.prepare('DELETE FROM sales WHERE id = ?').run(req.params.id)
+    await dbRun('DELETE FROM sales WHERE id = ?', [req.params.id])
     res.json({ success: true })
   } catch (error) {
     res.status(500).json({ error: error.message })
@@ -181,18 +225,18 @@ app.delete('/api/sales/:id', (req, res) => {
 })
 
 // Expenses endpoints
-app.get('/api/expenses', (req, res) => {
+app.get('/api/expenses', async (req, res) => {
   try {
-    const expenses = db.prepare('SELECT * FROM expenses ORDER BY created_at DESC').all()
+    const expenses = await dbAll('SELECT * FROM expenses ORDER BY created_at DESC')
     res.json(expenses)
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
 })
 
-app.get('/api/expenses/:id', (req, res) => {
+app.get('/api/expenses/:id', async (req, res) => {
   try {
-    const expense = db.prepare('SELECT * FROM expenses WHERE id = ?').get(req.params.id)
+    const expense = await dbGet('SELECT * FROM expenses WHERE id = ?', [req.params.id])
     if (!expense) return res.status(404).json({ error: 'Not found' })
     res.json(expense)
   } catch (error) {
@@ -200,38 +244,39 @@ app.get('/api/expenses/:id', (req, res) => {
   }
 })
 
-app.post('/api/expenses', (req, res) => {
+app.post('/api/expenses', async (req, res) => {
   try {
     const { description, amount, category, type, date } = req.body
-    const stmt = db.prepare(`
-      INSERT INTO expenses (description, amount, category, type, date)
-      VALUES (?, ?, ?, ?, ?)
-    `)
-    const result = stmt.run(description, amount, category, type, date)
-    const expense = db.prepare('SELECT * FROM expenses WHERE id = ?').get(result.lastInsertRowid)
+    const result = await dbRun(
+      `INSERT INTO expenses (description, amount, category, type, date)
+       VALUES (?, ?, ?, ?, ?)`,
+      [description, amount, category, type, date]
+    )
+    const expense = await dbGet('SELECT * FROM expenses WHERE id = ?', [result.lastID])
     res.status(201).json(expense)
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
 })
 
-app.put('/api/expenses/:id', (req, res) => {
+app.put('/api/expenses/:id', async (req, res) => {
   try {
     const { description, amount, category, type, date } = req.body
-    db.prepare(`
-      UPDATE expenses SET description=?, amount=?, category=?, type=?, date=?
-      WHERE id=?
-    `).run(description, amount, category, type, date, req.params.id)
-    const expense = db.prepare('SELECT * FROM expenses WHERE id = ?').get(req.params.id)
+    await dbRun(
+      `UPDATE expenses SET description=?, amount=?, category=?, type=?, date=?
+       WHERE id=?`,
+      [description, amount, category, type, date, req.params.id]
+    )
+    const expense = await dbGet('SELECT * FROM expenses WHERE id = ?', [req.params.id])
     res.json(expense)
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
 })
 
-app.delete('/api/expenses/:id', (req, res) => {
+app.delete('/api/expenses/:id', async (req, res) => {
   try {
-    db.prepare('DELETE FROM expenses WHERE id = ?').run(req.params.id)
+    await dbRun('DELETE FROM expenses WHERE id = ?', [req.params.id])
     res.json({ success: true })
   } catch (error) {
     res.status(500).json({ error: error.message })
@@ -239,11 +284,11 @@ app.delete('/api/expenses/:id', (req, res) => {
 })
 
 // Dashboard endpoint
-app.get('/api/dashboard', (req, res) => {
+app.get('/api/dashboard', async (req, res) => {
   try {
-    const sweets = db.prepare('SELECT * FROM sweets').all()
-    const sales = db.prepare('SELECT * FROM sales').all()
-    const expenses = db.prepare('SELECT * FROM expenses').all()
+    const sweets = await dbAll('SELECT * FROM sweets')
+    const sales = await dbAll('SELECT * FROM sales')
+    const expenses = await dbAll('SELECT * FROM expenses')
 
     const sweets_count = sweets.length
     const sales_count = sales.length
@@ -276,25 +321,26 @@ app.get('/api/dashboard', (req, res) => {
 })
 
 // Recipe endpoint - Brownies
-app.post('/api/recipes/brownies', (req, res) => {
+app.post('/api/recipes/brownies', async (req, res) => {
   try {
     // Create expense
-    const expenseStmt = db.prepare(`
-      INSERT INTO expenses (description, amount, category, type, date)
-      VALUES (?, ?, ?, ?, ?)
-    `)
-    expenseStmt.run('Receita: Brownies', -16, 'Ingredientes', 'Fixo', new Date().toISOString().split('T')[0])
+    await dbRun(
+      `INSERT INTO expenses (description, amount, category, type, date)
+       VALUES (?, ?, ?, ?, ?)`,
+      ['Receita: Brownies', -16, 'Ingredientes', 'Fixo', new Date().toISOString().split('T')[0]]
+    )
 
-    // Check if brownie exists
-    const brownie = db.prepare('SELECT * FROM sweets WHERE name = ?').get('Brownie')
+    // Check if brownie already exists
+    const brownie = await dbGet('SELECT * FROM sweets WHERE name = ?', ['Brownie'])
 
     if (brownie) {
-      db.prepare('UPDATE sweets SET quantity = quantity + 12 WHERE id = ?').run(brownie.id)
+      await dbRun('UPDATE sweets SET quantity = quantity + 12 WHERE id = ?', [brownie.id])
     } else {
-      db.prepare(`
-        INSERT INTO sweets (name, form_name, category, cost_price, selling_price, quantity)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `).run('Brownie', 'Unidade', 'Chocolate', 2, 4, 12)
+      await dbRun(
+        `INSERT INTO sweets (name, form_name, category, cost_price, selling_price, quantity)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        ['Brownie', 'Unidade', 'Chocolate', 2, 4, 12]
+      )
     }
 
     res.json({ success: true })
@@ -309,7 +355,6 @@ app.get('/health', (req, res) => {
 })
 
 // Start server
-initDB()
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`)
   console.log(`📁 Database: ${dbPath}`)
