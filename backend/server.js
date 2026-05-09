@@ -188,14 +188,26 @@ app.get('/api/sales/:id', async (req, res) => {
 app.post('/api/sales', async (req, res) => {
   try {
     const { sweet_id, quantity, customer_name, discount, surcharge, payment_method, status, notes, date } = req.body
+    const saleQuantity = Math.max(1, Math.trunc(Number(quantity) || 1))
+    const sweet = await dbGet('SELECT * FROM sweets WHERE id = ?', [sweet_id])
+
+    if (!sweet) return res.status(404).json({ error: 'Doce nao encontrado' })
+    if ((sweet.quantity || 0) < saleQuantity) {
+      return res.status(400).json({ error: 'Estoque insuficiente para esta venda' })
+    }
+
+    await dbRun('BEGIN TRANSACTION')
     const result = await dbRun(
       `INSERT INTO sales (sweet_id, quantity, customer_name, discount, surcharge, payment_method, status, notes, date)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [sweet_id, quantity, customer_name, discount || 0, surcharge || 0, payment_method, status, notes, date]
+      [sweet_id, saleQuantity, customer_name, discount || 0, surcharge || 0, payment_method, status, notes, date]
     )
+    await dbRun('UPDATE sweets SET quantity = quantity - ? WHERE id = ?', [saleQuantity, sweet_id])
+    await dbRun('COMMIT')
     const sale = await dbGet('SELECT * FROM sales WHERE id = ?', [result.lastID])
     res.status(201).json(sale)
   } catch (error) {
+    await dbRun('ROLLBACK').catch(() => {})
     res.status(500).json({ error: error.message })
   }
 })
@@ -203,20 +215,45 @@ app.post('/api/sales', async (req, res) => {
 app.put('/api/sales/:id', async (req, res) => {
   try {
     const { sweet_id, quantity, customer_name, discount, surcharge, payment_method, status, notes, date } = req.body
+    const currentSale = await dbGet('SELECT * FROM sales WHERE id = ?', [req.params.id])
+    if (!currentSale) return res.status(404).json({ error: 'Venda nao encontrada' })
+
+    const saleQuantity = Math.max(1, Math.trunc(Number(quantity) || 1))
+    const currentSweet = await dbGet('SELECT * FROM sweets WHERE id = ?', [currentSale.sweet_id])
+    const nextSweet = await dbGet('SELECT * FROM sweets WHERE id = ?', [sweet_id])
+
+    if (!nextSweet) return res.status(404).json({ error: 'Doce nao encontrado' })
+
+    const availableQuantity = (nextSweet.quantity || 0) + (Number(currentSale.sweet_id) === Number(sweet_id) ? currentSale.quantity || 0 : 0)
+    if (availableQuantity < saleQuantity) {
+      return res.status(400).json({ error: 'Estoque insuficiente para esta venda' })
+    }
+
+    await dbRun('BEGIN TRANSACTION')
+    if (currentSweet) {
+      await dbRun('UPDATE sweets SET quantity = quantity + ? WHERE id = ?', [currentSale.quantity || 0, currentSale.sweet_id])
+    }
     await dbRun(
       `UPDATE sales SET sweet_id=?, quantity=?, customer_name=?, discount=?, surcharge=?, payment_method=?, status=?, notes=?, date=?
        WHERE id=?`,
-      [sweet_id, quantity, customer_name, discount, surcharge, payment_method, status, notes, date, req.params.id]
+      [sweet_id, saleQuantity, customer_name, discount, surcharge, payment_method, status, notes, date, req.params.id]
     )
+    await dbRun('UPDATE sweets SET quantity = quantity - ? WHERE id = ?', [saleQuantity, sweet_id])
+    await dbRun('COMMIT')
     const sale = await dbGet('SELECT * FROM sales WHERE id = ?', [req.params.id])
     res.json(sale)
   } catch (error) {
+    await dbRun('ROLLBACK').catch(() => {})
     res.status(500).json({ error: error.message })
   }
 })
 
 app.delete('/api/sales/:id', async (req, res) => {
   try {
+    const sale = await dbGet('SELECT * FROM sales WHERE id = ?', [req.params.id])
+    if (sale) {
+      await dbRun('UPDATE sweets SET quantity = quantity + ? WHERE id = ?', [sale.quantity || 0, sale.sweet_id])
+    }
     await dbRun('DELETE FROM sales WHERE id = ?', [req.params.id])
     res.json({ success: true })
   } catch (error) {
@@ -304,7 +341,7 @@ app.get('/api/dashboard', async (req, res) => {
     }
 
     const total_expenses = expenses.reduce((sum, e) => sum + e.amount, 0)
-    const balance = total_sales + total_expenses
+    const balance = total_sales - total_expenses
 
     res.json({
       sweets_count,

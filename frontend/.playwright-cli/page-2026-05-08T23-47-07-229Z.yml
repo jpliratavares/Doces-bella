@@ -1,0 +1,81 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]: DB
+      - generic [ref=e7]:
+        - heading "Doces da Bella" [level=1] [ref=e8]
+        - paragraph [ref=e9]: Controle de doces
+    - navigation "Navegacao principal" [ref=e10]:
+      - button "Dashboard Resumo geral" [ref=e11] [cursor=pointer]:
+        - generic [ref=e12]: Dashboard
+        - generic [ref=e13]: Resumo geral
+      - button "Doces Catalogo e estoque" [ref=e14] [cursor=pointer]:
+        - generic [ref=e15]: Doces
+        - generic [ref=e16]: Catalogo e estoque
+      - button "Vendas Pedidos e receita" [active] [ref=e17] [cursor=pointer]:
+        - generic [ref=e18]: Vendas
+        - generic [ref=e19]: Pedidos e receita
+      - button "Despesas Custos e receitas" [ref=e20] [cursor=pointer]:
+        - generic [ref=e21]: Despesas
+        - generic [ref=e22]: Custos e receitas
+  - main [ref=e23]:
+    - generic [ref=e24]:
+      - generic [ref=e25]:
+        - paragraph [ref=e26]: Painel operacional
+        - heading "Vendas" [level=2] [ref=e245]
+      - generic [ref=e28]: Atualizacao local ativa
+    - generic [ref=e30]:
+      - generic [ref=e246]:
+        - generic [ref=e247]:
+          - heading "Vendas e pedidos" [level=3] [ref=e248]
+          - paragraph [ref=e249]: Registre clientes, pagamento, status e total de cada venda.
+        - button "Nova venda" [ref=e250] [cursor=pointer]
+      - generic [ref=e251]:
+        - article [ref=e252]:
+          - generic [ref=e253]:
+            - generic [ref=e254]:
+              - heading "Brigadeiro" [level=3] [ref=e255]
+              - generic [ref=e256]: Pago
+            - strong [ref=e257]: R$ 8.00
+          - generic [ref=e258]:
+            - generic [ref=e259]:
+              - generic [ref=e260]: Cliente
+              - strong [ref=e261]: Teste Estoque
+            - generic [ref=e262]:
+              - generic [ref=e263]: Quantidade
+              - strong [ref=e264]: 2 un.
+            - generic [ref=e265]:
+              - generic [ref=e266]: Pagamento
+              - strong [ref=e267]: Pix
+            - generic [ref=e268]:
+              - generic [ref=e269]: Data
+              - strong [ref=e270]: 07/05/2026
+          - generic [ref=e271]:
+            - generic [ref=e272]: Desconto R$ 0.00 | Acrescimo R$ 0.00
+            - generic [ref=e273]:
+              - button "Editar" [ref=e274] [cursor=pointer]
+              - button "Deletar" [ref=e275] [cursor=pointer]
+        - article [ref=e276]:
+          - generic [ref=e277]:
+            - generic [ref=e278]:
+              - heading "Brigadeiro" [level=3] [ref=e279]
+              - generic [ref=e280]: Pago
+            - strong [ref=e281]: R$ 11.00
+          - generic [ref=e282]:
+            - generic [ref=e283]:
+              - generic [ref=e284]: Cliente
+              - strong [ref=e285]: Maria
+            - generic [ref=e286]:
+              - generic [ref=e287]: Quantidade
+              - strong [ref=e288]: 3 un.
+            - generic [ref=e289]:
+              - generic [ref=e290]: Pagamento
+              - strong [ref=e291]: Pix
+            - generic [ref=e292]:
+              - generic [ref=e293]: Data
+              - strong [ref=e294]: 07/05/2026
+          - generic [ref=e295]:
+            - generic [ref=e296]: Desconto R$ 1.00 | Acrescimo R$ 0.00
+            - generic [ref=e297]:
+              - button "Editar" [ref=e298] [cursor=pointer]
+              - button "Deletar" [ref=e299] [cursor=pointer]

@@ -1,0 +1,60 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]: DB
+      - generic [ref=e7]:
+        - heading "Doces da Bella" [level=1] [ref=e8]
+        - paragraph [ref=e9]: Controle de doces
+    - navigation "Navegacao principal" [ref=e10]:
+      - button "Dashboard Resumo geral" [ref=e11] [cursor=pointer]:
+        - generic [ref=e12]: Dashboard
+        - generic [ref=e13]: Resumo geral
+      - button "Doces Catalogo e estoque" [ref=e14] [cursor=pointer]:
+        - generic [ref=e15]: Doces
+        - generic [ref=e16]: Catalogo e estoque
+      - button "Vendas Pedidos e receita" [ref=e17] [cursor=pointer]:
+        - generic [ref=e18]: Vendas
+        - generic [ref=e19]: Pedidos e receita
+      - button "Despesas Custos e receitas" [ref=e20] [cursor=pointer]:
+        - generic [ref=e21]: Despesas
+        - generic [ref=e22]: Custos e receitas
+  - main [ref=e23]:
+    - generic [ref=e24]:
+      - generic [ref=e25]:
+        - paragraph [ref=e26]: Painel operacional
+        - heading "Dashboard" [level=2] [ref=e27]
+      - generic [ref=e28]: Atualizacao local ativa
+    - generic [ref=e30]:
+      - generic [ref=e32]:
+        - heading "Resumo em tempo real" [level=3] [ref=e33]
+        - paragraph [ref=e34]: Acompanhe estoque, vendas, despesas e saldo atualizado.
+      - generic [ref=e35]:
+        - article [ref=e36]:
+          - paragraph [ref=e37]: Doces cadastrados
+          - paragraph [ref=e38]: "1"
+          - paragraph [ref=e39]: Itens no catalogo
+        - article [ref=e40]:
+          - paragraph [ref=e41]: Vendas registradas
+          - paragraph [ref=e42]: "1"
+          - paragraph [ref=e43]: Pedidos no historico
+        - article [ref=e44]:
+          - paragraph [ref=e45]: Estoque total
+          - paragraph [ref=e46]: "21"
+          - paragraph [ref=e47]: Unidades disponiveis
+        - article [ref=e48]:
+          - paragraph [ref=e49]: Lancamentos
+          - paragraph [ref=e50]: "0"
+          - paragraph [ref=e51]: Custos e receitas
+      - generic [ref=e52]:
+        - article [ref=e53]:
+          - paragraph [ref=e54]: Total vendido
+          - paragraph [ref=e55]: R$ 11.00
+          - paragraph [ref=e56]: Receita bruta registrada
+        - article [ref=e57]:
+          - paragraph [ref=e58]: Total de despesas
+          - paragraph [ref=e59]: R$ 0.00
+          - paragraph [ref=e60]: Saidas e custos de producao
+        - article [ref=e61]:
+          - paragraph [ref=e62]: Saldo
+          - paragraph [ref=e63]: R$ 11.00
+          - paragraph [ref=e64]: Resultado consolidado

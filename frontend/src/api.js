@@ -2,6 +2,7 @@ import axios from 'axios'
 
 const configuredApiUrl = import.meta.env.VITE_API_URL?.trim()
 const storageKey = 'doces-bella-local-db-v1'
+const backupStorageKey = `${storageKey}-backup`
 
 const browserAvailable = typeof window !== 'undefined' && typeof window.localStorage !== 'undefined'
 
@@ -9,6 +10,9 @@ const emptyState = () => ({
   sweets: [],
   sales: [],
   expenses: [],
+  meta: {
+    inventoryDebited: true,
+  },
 })
 
 let memoryState = emptyState()
@@ -28,6 +32,57 @@ const normalizeDate = (value) => {
   return Number.isNaN(date.getTime()) ? todayIso() : date.toISOString()
 }
 
+const debitExistingSalesFromInventory = (sweets, sales) => {
+  const nextSweets = clone(sweets)
+
+  sales.forEach((sale) => {
+    const sweetIndex = nextSweets.findIndex((sweet) => Number(sweet.id) === Number(sale.sweet_id))
+    if (sweetIndex >= 0) {
+      nextSweets[sweetIndex] = {
+        ...nextSweets[sweetIndex],
+        quantity: Math.max(0, toNumber(nextSweets[sweetIndex].quantity) - normalizeSaleQuantity(sale.quantity)),
+      }
+    }
+  })
+
+  return nextSweets
+}
+
+const normalizeState = (value) => {
+  const sales = Array.isArray(value?.sales) ? value.sales : []
+  const expenses = Array.isArray(value?.expenses) ? value.expenses : []
+  const sourceSweets = Array.isArray(value?.sweets) ? value.sweets : []
+  const inventoryDebited = value?.meta?.inventoryDebited === true
+
+  return {
+    sweets: inventoryDebited ? sourceSweets : debitExistingSalesFromInventory(sourceSweets, sales),
+    sales,
+    expenses,
+    meta: {
+      ...(typeof value?.meta === 'object' && value?.meta ? value.meta : {}),
+      inventoryDebited: true,
+    },
+  }
+}
+
+const parseStoredState = (value) => {
+  if (!value) return null
+  try {
+    return normalizeState(JSON.parse(value))
+  } catch {
+    return null
+  }
+}
+
+const needsInventoryMigration = (value) => {
+  if (!value) return false
+  try {
+    return JSON.parse(value)?.meta?.inventoryDebited !== true
+  } catch {
+    return false
+  }
+}
+
 const loadState = () => {
   if (!browserAvailable) {
     return memoryState
@@ -35,14 +90,22 @@ const loadState = () => {
 
   try {
     const storedValue = window.localStorage.getItem(storageKey)
-    if (!storedValue) return memoryState
-
-    const parsedValue = JSON.parse(storedValue)
-    return {
-      sweets: Array.isArray(parsedValue.sweets) ? parsedValue.sweets : [],
-      sales: Array.isArray(parsedValue.sales) ? parsedValue.sales : [],
-      expenses: Array.isArray(parsedValue.expenses) ? parsedValue.expenses : [],
+    const storedState = parseStoredState(storedValue)
+    if (storedState) {
+      if (needsInventoryMigration(storedValue)) {
+        saveState(storedState)
+      }
+      return storedState
     }
+
+    const backupValue = window.localStorage.getItem(backupStorageKey)
+    const backupState = parseStoredState(backupValue)
+    if (backupState) {
+      saveState(backupState)
+      return backupState
+    }
+
+    return memoryState
   } catch {
     return memoryState
   }
@@ -55,7 +118,9 @@ const saveState = (nextState) => {
     return
   }
 
-  window.localStorage.setItem(storageKey, JSON.stringify(nextState))
+  const serializedState = JSON.stringify(nextState)
+  window.localStorage.setItem(backupStorageKey, serializedState)
+  window.localStorage.setItem(storageKey, serializedState)
 }
 
 const nextId = (items) => items.reduce((maxId, item) => Math.max(maxId, Number(item.id) || 0), 0) + 1
@@ -73,6 +138,41 @@ const calculateSaleTotal = (sale, sweets) => {
     toNumber(sale.discount) +
     toNumber(sale.surcharge)
   )
+}
+
+const normalizeSaleQuantity = (quantity) => Math.max(1, Math.trunc(toNumber(quantity) || 1))
+
+const findSweetIndex = (state, sweetId) => {
+  return state.sweets.findIndex((item) => Number(item.id) === Number(sweetId))
+}
+
+const removeFromStock = (state, sweetId, quantity) => {
+  const sweetIndex = findSweetIndex(state, sweetId)
+  if (sweetIndex === -1) {
+    throw new Error('Doce nao encontrado')
+  }
+
+  const saleQuantity = normalizeSaleQuantity(quantity)
+  const currentQuantity = toNumber(state.sweets[sweetIndex].quantity)
+
+  if (currentQuantity < saleQuantity) {
+    throw new Error('Estoque insuficiente para esta venda')
+  }
+
+  state.sweets[sweetIndex] = {
+    ...state.sweets[sweetIndex],
+    quantity: currentQuantity - saleQuantity,
+  }
+}
+
+const restoreToStock = (state, sweetId, quantity) => {
+  const sweetIndex = findSweetIndex(state, sweetId)
+  if (sweetIndex === -1) return
+
+  state.sweets[sweetIndex] = {
+    ...state.sweets[sweetIndex],
+    quantity: toNumber(state.sweets[sweetIndex].quantity) + normalizeSaleQuantity(quantity),
+  }
 }
 
 const makeResponse = (data) => Promise.resolve({ data: clone(data) })
@@ -119,7 +219,7 @@ const localApi = {
         total_quantity: state.sweets.reduce((sum, sweet) => sum + toNumber(sweet.quantity), 0),
         total_sales: totalSales,
         total_expenses: totalExpenses,
-        balance: totalSales + totalExpenses,
+        balance: totalSales - totalExpenses,
       })
     }
 
@@ -154,10 +254,13 @@ const localApi = {
         throw new Error('Doce não encontrado')
       }
 
+      const saleQuantity = normalizeSaleQuantity(payload.quantity)
+      removeFromStock(state, sweetId, saleQuantity)
+
       const nextSale = {
         id: nextId(state.sales),
         sweet_id: sweetId,
-        quantity: Math.max(1, Math.trunc(toNumber(payload.quantity) || 1)),
+        quantity: saleQuantity,
         customer_name: payload.customer_name || '',
         discount: toNumber(payload.discount),
         surcharge: toNumber(payload.surcharge),
@@ -254,18 +357,23 @@ const localApi = {
       const index = state.sales.findIndex((item) => Number(item.id) === id)
       if (index === -1) throw new Error('Venda não encontrada')
 
-      state.sales[index] = {
-        ...state.sales[index],
-        sweet_id: payload.sweet_id !== undefined ? Number(payload.sweet_id) : Number(state.sales[index].sweet_id),
-        quantity: payload.quantity !== undefined ? Math.max(1, Math.trunc(toNumber(payload.quantity))) : state.sales[index].quantity,
-        customer_name: payload.customer_name ?? state.sales[index].customer_name,
-        discount: payload.discount !== undefined ? toNumber(payload.discount) : toNumber(state.sales[index].discount),
-        surcharge: payload.surcharge !== undefined ? toNumber(payload.surcharge) : toNumber(state.sales[index].surcharge),
-        payment_method: payload.payment_method ?? state.sales[index].payment_method,
-        status: payload.status ?? state.sales[index].status,
-        notes: payload.notes ?? state.sales[index].notes,
-        date: payload.date ? normalizeDate(payload.date) : state.sales[index].date,
+      const currentSale = state.sales[index]
+      const nextSale = {
+        ...currentSale,
+        sweet_id: payload.sweet_id !== undefined ? Number(payload.sweet_id) : Number(currentSale.sweet_id),
+        quantity: payload.quantity !== undefined ? normalizeSaleQuantity(payload.quantity) : normalizeSaleQuantity(currentSale.quantity),
+        customer_name: payload.customer_name ?? currentSale.customer_name,
+        discount: payload.discount !== undefined ? toNumber(payload.discount) : toNumber(currentSale.discount),
+        surcharge: payload.surcharge !== undefined ? toNumber(payload.surcharge) : toNumber(currentSale.surcharge),
+        payment_method: payload.payment_method ?? currentSale.payment_method,
+        status: payload.status ?? currentSale.status,
+        notes: payload.notes ?? currentSale.notes,
+        date: payload.date ? normalizeDate(payload.date) : currentSale.date,
       }
+
+      restoreToStock(state, currentSale.sweet_id, currentSale.quantity)
+      removeFromStock(state, nextSale.sweet_id, nextSale.quantity)
+      state.sales[index] = nextSale
 
       saveState(state)
       return makeResponse(state.sales[index])
@@ -305,6 +413,10 @@ const localApi = {
 
     if (url.startsWith('/sales/')) {
       const id = Number(url.split('/').pop())
+      const sale = state.sales.find((item) => Number(item.id) === id)
+      if (sale) {
+        restoreToStock(state, sale.sweet_id, sale.quantity)
+      }
       state.sales = state.sales.filter((item) => Number(item.id) !== id)
       saveState(state)
       return makeResponse({ success: true })

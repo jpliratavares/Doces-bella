@@ -1,0 +1,56 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]: DB
+      - generic [ref=e7]:
+        - heading "Doces da Bella" [level=1] [ref=e8]
+        - paragraph [ref=e9]: Controle de doces
+    - navigation "Navegacao principal" [ref=e10]:
+      - button "Dashboard Resumo geral" [ref=e11] [cursor=pointer]:
+        - generic [ref=e12]: Dashboard
+        - generic [ref=e13]: Resumo geral
+      - button "Doces Catalogo e estoque" [ref=e14] [cursor=pointer]:
+        - generic [ref=e15]: Doces
+        - generic [ref=e16]: Catalogo e estoque
+      - button "Vendas Pedidos e receita" [active] [ref=e17] [cursor=pointer]:
+        - generic [ref=e18]: Vendas
+        - generic [ref=e19]: Pedidos e receita
+      - button "Despesas Custos e receitas" [ref=e20] [cursor=pointer]:
+        - generic [ref=e21]: Despesas
+        - generic [ref=e22]: Custos e receitas
+  - main [ref=e23]:
+    - generic [ref=e24]:
+      - generic [ref=e25]:
+        - paragraph [ref=e26]: Painel operacional
+        - heading "Vendas" [level=2] [ref=e96]
+      - generic [ref=e28]: Atualizacao local ativa
+    - generic [ref=e30]:
+      - generic [ref=e97]:
+        - generic [ref=e98]:
+          - heading "Vendas e pedidos" [level=3] [ref=e99]
+          - paragraph [ref=e100]: Registre clientes, pagamento, status e total de cada venda.
+        - button "Nova venda" [ref=e101] [cursor=pointer]
+      - article [ref=e103]:
+        - generic [ref=e104]:
+          - generic [ref=e105]:
+            - heading "Brigadeiro" [level=3] [ref=e106]
+            - generic [ref=e107]: Pago
+          - strong [ref=e108]: R$ 11.00
+        - generic [ref=e109]:
+          - generic [ref=e110]:
+            - generic [ref=e111]: Cliente
+            - strong [ref=e112]: Maria
+          - generic [ref=e113]:
+            - generic [ref=e114]: Quantidade
+            - strong [ref=e115]: 3 un.
+          - generic [ref=e116]:
+            - generic [ref=e117]: Pagamento
+            - strong [ref=e118]: Pix
+          - generic [ref=e119]:
+            - generic [ref=e120]: Data
+            - strong [ref=e121]: 07/05/2026
+        - generic [ref=e122]:
+          - generic [ref=e123]: Desconto R$ 1.00 | Acrescimo R$ 0.00
+          - generic [ref=e124]:
+            - button "Editar" [ref=e125] [cursor=pointer]
+            - button "Deletar" [ref=e126] [cursor=pointer]

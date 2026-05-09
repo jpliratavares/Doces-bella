@@ -86,8 +86,15 @@ def get_sale(sale_id: int, db: Session = Depends(get_db)):
 
 @app.post("/api/sales", response_model=Sale)
 def create_sale(sale: SaleCreate, db: Session = Depends(get_db)):
+    sweet = db.query(SweetModel).filter(SweetModel.id == sale.sweet_id).first()
+    if not sweet:
+        raise HTTPException(status_code=404, detail="Doce nao encontrado")
+    if sweet.quantity < sale.quantity:
+        raise HTTPException(status_code=400, detail="Estoque insuficiente para esta venda")
+
     db_sale = SaleModel(**sale.dict())
     db.add(db_sale)
+    sweet.quantity -= sale.quantity
     db.commit()
     db.refresh(db_sale)
     return db_sale
@@ -98,8 +105,22 @@ def update_sale(sale_id: int, sale: SaleCreate, db: Session = Depends(get_db)):
     db_sale = db.query(SaleModel).filter(SaleModel.id == sale_id).first()
     if not db_sale:
         raise HTTPException(status_code=404, detail="Venda não encontrada")
+    current_sweet = db.query(SweetModel).filter(SweetModel.id == db_sale.sweet_id).first()
+    next_sweet = db.query(SweetModel).filter(SweetModel.id == sale.sweet_id).first()
+    if not next_sweet:
+        raise HTTPException(status_code=404, detail="Doce nao encontrado")
+
+    available_quantity = next_sweet.quantity
+    if db_sale.sweet_id == sale.sweet_id:
+        available_quantity += db_sale.quantity
+    if available_quantity < sale.quantity:
+        raise HTTPException(status_code=400, detail="Estoque insuficiente para esta venda")
+
+    if current_sweet:
+        current_sweet.quantity += db_sale.quantity
     for key, value in sale.dict().items():
         setattr(db_sale, key, value)
+    next_sweet.quantity -= sale.quantity
     db.commit()
     db.refresh(db_sale)
     return db_sale
@@ -110,6 +131,9 @@ def delete_sale(sale_id: int, db: Session = Depends(get_db)):
     db_sale = db.query(SaleModel).filter(SaleModel.id == sale_id).first()
     if not db_sale:
         raise HTTPException(status_code=404, detail="Venda não encontrada")
+    sweet = db.query(SweetModel).filter(SweetModel.id == db_sale.sweet_id).first()
+    if sweet:
+        sweet.quantity += db_sale.quantity
     db.delete(db_sale)
     db.commit()
     return {"message": "Venda deletada com sucesso"}

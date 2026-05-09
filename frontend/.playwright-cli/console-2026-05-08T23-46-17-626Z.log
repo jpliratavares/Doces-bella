@@ -1,0 +1,3 @@
+[      41ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://172.17.128.1:3001/node_modules/.vite/deps/chunk-VKLKESE7.js?v=25f0ab58:21550
+[ 1065942ms] [ERROR] Failed to load module script: Expected a JavaScript-or-Wasm module script but the server responded with a MIME type of "text/html". Strict MIME type checking is enforced for module scripts per HTML spec. @ http://172.17.128.1:3001/src/index.css?t=1778285042639:0
+[ 1065944ms] [ERROR] [hmr] Failed to reload /src/index.css. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://172.17.128.1:3001/@vite/client:175

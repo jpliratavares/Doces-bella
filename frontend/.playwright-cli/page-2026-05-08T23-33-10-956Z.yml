@@ -1,0 +1,69 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]: DB
+      - generic [ref=e7]:
+        - heading "Doces da Bella" [level=1] [ref=e8]
+        - paragraph [ref=e9]: Controle de doces
+    - navigation "Navegacao principal" [ref=e10]:
+      - button "Dashboard Resumo geral" [ref=e11] [cursor=pointer]:
+        - generic [ref=e12]: Dashboard
+        - generic [ref=e13]: Resumo geral
+      - button "Doces Catalogo e estoque" [ref=e14] [cursor=pointer]:
+        - generic [ref=e15]: Doces
+        - generic [ref=e16]: Catalogo e estoque
+      - button "Vendas Pedidos e receita" [ref=e17] [cursor=pointer]:
+        - generic [ref=e18]: Vendas
+        - generic [ref=e19]: Pedidos e receita
+      - button "Despesas Custos e receitas" [ref=e20] [cursor=pointer]:
+        - generic [ref=e21]: Despesas
+        - generic [ref=e22]: Custos e receitas
+  - main [ref=e23]:
+    - generic [ref=e24]:
+      - generic [ref=e25]:
+        - paragraph [ref=e26]: Painel operacional
+        - heading "Despesas" [level=2] [ref=e237]
+      - generic [ref=e28]: Atualizacao local ativa
+    - generic [ref=e30]:
+      - generic [ref=e238]:
+        - generic [ref=e239]:
+          - heading "Despesas e producao" [level=3] [ref=e240]
+          - paragraph [ref=e241]: Registre custos fixos, variaveis e receitas de producao.
+        - generic [ref=e242]:
+          - button "Receita brownie" [ref=e243] [cursor=pointer]
+          - button "Cancelar" [active] [ref=e254] [cursor=pointer]
+      - article [ref=e246]:
+        - paragraph [ref=e247]: Total lancado
+        - paragraph [ref=e248]: R$ 0.00
+        - paragraph [ref=e249]: Soma dos custos e receitas cadastrados
+      - generic [ref=e256]:
+        - generic [ref=e257]:
+          - generic [ref=e258]:
+            - generic [ref=e259]: Descricao
+            - textbox [ref=e260]
+          - generic [ref=e261]:
+            - generic [ref=e262]: Valor
+            - spinbutton [ref=e263]: "0"
+          - generic [ref=e264]:
+            - generic [ref=e265]: Categoria
+            - combobox [ref=e266]:
+              - option "Geral" [selected]
+              - option "Ingredientes"
+              - option "Embalagem"
+              - option "Logistica"
+              - option "Receita"
+              - option "Outros"
+          - generic [ref=e267]:
+            - generic [ref=e268]: Tipo
+            - combobox [ref=e269]:
+              - option "Fixo"
+              - option "Variavel" [selected]
+          - generic [ref=e270]:
+            - generic [ref=e271]: Data
+            - textbox [ref=e272]: 2026-05-08
+        - generic [ref=e273]:
+          - button "Cancelar" [ref=e274] [cursor=pointer]
+          - button "Salvar lancamento" [ref=e275] [cursor=pointer]
+      - generic [ref=e251]:
+        - heading "Nenhuma despesa registrada" [level=3] [ref=e252]
+        - paragraph [ref=e253]: Adicione um custo para acompanhar o resultado.

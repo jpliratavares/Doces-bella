@@ -1,0 +1,56 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]: DB
+      - generic [ref=e7]:
+        - heading "Doces da Bella" [level=1] [ref=e8]
+        - paragraph [ref=e9]: Controle de doces
+    - navigation "Navegacao principal" [ref=e10]:
+      - button "Dashboard Resumo geral" [ref=e11] [cursor=pointer]:
+        - generic [ref=e12]: Dashboard
+        - generic [ref=e13]: Resumo geral
+      - button "Doces Catalogo e estoque" [active] [ref=e14] [cursor=pointer]:
+        - generic [ref=e15]: Doces
+        - generic [ref=e16]: Catalogo e estoque
+      - button "Vendas Pedidos e receita" [ref=e17] [cursor=pointer]:
+        - generic [ref=e18]: Vendas
+        - generic [ref=e19]: Pedidos e receita
+      - button "Despesas Custos e receitas" [ref=e20] [cursor=pointer]:
+        - generic [ref=e21]: Despesas
+        - generic [ref=e22]: Custos e receitas
+  - main [ref=e23]:
+    - generic [ref=e24]:
+      - generic [ref=e25]:
+        - paragraph [ref=e26]: Painel operacional
+        - heading "Doces" [level=2] [ref=e329]
+      - generic [ref=e28]: Atualizacao local ativa
+    - generic [ref=e30]:
+      - generic [ref=e330]:
+        - generic [ref=e331]:
+          - heading "Catalogo de doces" [level=3] [ref=e332]
+          - paragraph [ref=e333]: Controle preco, margem e estoque disponivel para venda.
+        - button "Novo doce" [ref=e334] [cursor=pointer]
+      - article [ref=e336]:
+        - generic [ref=e337]:
+          - generic [ref=e338]:
+            - heading "Brigadeiro" [level=3] [ref=e339]
+            - generic [ref=e340]: Chocolate
+          - generic [ref=e341]: 21 em estoque
+        - generic [ref=e342]:
+          - generic [ref=e343]:
+            - generic [ref=e344]: Forma
+            - strong [ref=e345]: Unidade
+          - generic [ref=e346]:
+            - generic [ref=e347]: Custo
+            - strong [ref=e348]: R$ 1.50
+          - generic [ref=e349]:
+            - generic [ref=e350]: Venda
+            - strong [ref=e351]: R$ 4.00
+          - generic [ref=e352]:
+            - generic [ref=e353]: Margem
+            - strong [ref=e354]: R$ 2.50 (166.7%)
+        - generic [ref=e355]:
+          - generic [ref=e356]: Atualize o estoque antes de registrar novas vendas.
+          - generic [ref=e357]:
+            - button "Editar" [ref=e358] [cursor=pointer]
+            - button "Deletar" [ref=e359] [cursor=pointer]
